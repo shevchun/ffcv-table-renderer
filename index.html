@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Clasificación</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; padding: 28px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: linear-gradient(135deg, #0a3d62 0%, #006266 100%); min-height: 100vh; }
+.card { background: #fff; border-radius: 14px; box-shadow: 0 12px 36px rgba(0,0,0,0.35); padding: 24px 26px; }
+.title { margin: 0 0 4px; font-size: 21px; font-weight: 800; color: #0a3d62; letter-spacing: -0.2px; }
+.subtitle { margin: 0 0 18px; font-size: 12.5px; color: #7a7a7a; }
+table { width: 100%; border-collapse: collapse; }
+thead th { background: #0a3d62; color: #fff; padding: 11px 6px; font-size: 11.5px; font-weight: 600; text-align: center; letter-spacing: 0.3px; }
+thead th.team-col { text-align: left; padding-left: 14px; }
+thead th:first-child { border-top-left-radius: 8px; }
+thead th:last-child { border-top-right-radius: 8px; }
+tbody td { padding: 8.5px 6px; border-bottom: 1px solid #ececec; font-size: 13px; text-align: center; color: #2a2a2a; font-variant-numeric: tabular-nums; }
+tbody tr:last-child td { border-bottom: none; }
+tbody td.team { text-align: left; padding-left: 14px; font-weight: 500; }
+tbody td.pos { font-weight: 700; color: #555; }
+tbody td.pts { font-weight: 800; color: #0a3d62; font-size: 14px; }
+tbody td.diff.pos-diff { color: #2e7d32; }
+tbody td.diff.neg-diff { color: #c62828; }
+tbody tr.highlight { background: linear-gradient(90deg, rgba(255, 223, 110, 0.5) 0%, rgba(255, 223, 110, 0.18) 100%); }
+tbody tr.highlight td { font-weight: 700; color: #0a3d62; }
+.form { white-space: nowrap; min-width: 130px; }
+.form-cell { display: inline-block; width: 20px; height: 20px; line-height: 20px; border-radius: 50%; color: #fff; font-size: 10.5px; font-weight: 700; margin: 0 1px; text-align: center; }
+.fw { background: #2e7d32; }
+.fd { background: #f9a825; color: #2a2a2a; }
+.fl { background: #c62828; }
+.err { color: #fff; font-family: monospace; padding: 30px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+function escapeHtml(s) {
+  if (s === null || s === undefined) return "";
+  return String(s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+function fromBase64Url(s) {
+  let b64 = s.replace(/-/g, "+").replace(/_/g, "/");
+  while (b64.length % 4) b64 += "=";
+  return decodeURIComponent(escape(atob(b64)));
+}
+
+function render() {
+  const root = document.getElementById("root");
+  try {
+    const params = new URLSearchParams(location.search);
+    const dataB64 = params.get("d");
+    if (!dataB64) {
+      root.innerHTML = '<div class="err">Missing "d" parameter</div>';
+      return;
+    }
+    const data = JSON.parse(fromBase64Url(dataB64));
+    const table = data.t || [];
+    const highlighted = new Set(data.h || []);
+    const groupName = data.gn || "";
+    const jornadaInfo = data.ji || "";
+
+    const rows = table.map(t => {
+      const isHi = highlighted.has(t.c);
+      const formCells = (t.r || "").split("").map(letter => {
+        const cls = letter === "G" ? "fw" : letter === "E" ? "fd" : "fl";
+        return `<span class="form-cell ${cls}">${letter}</span>`;
+      }).join("");
+      const gf = parseInt(t.gf) || 0;
+      const gc = parseInt(t.gc) || 0;
+      const diff = gf - gc;
+      const diffStr = diff > 0 ? `+${diff}` : String(diff);
+      return `<tr class="${isHi ? "highlight" : ""}">
+        <td class="pos">${escapeHtml(t.p)}</td>
+        <td class="team">${escapeHtml(t.n)}</td>
+        <td>${escapeHtml(t.pj)}</td>
+        <td>${escapeHtml(t.g)}</td>
+        <td>${escapeHtml(t.e)}</td>
+        <td>${escapeHtml(t.pp)}</td>
+        <td>${escapeHtml(t.gf)}</td>
+        <td>${escapeHtml(t.gc)}</td>
+        <td class="diff ${diff >= 0 ? "pos-diff" : "neg-diff"}">${diffStr}</td>
+        <td class="pts">${escapeHtml(t.pt)}</td>
+        <td class="form">${formCells}</td>
+      </tr>`;
+    }).join("");
+
+    root.innerHTML = `<div class="card">
+      <h1 class="title">${escapeHtml(groupName)}</h1>
+      <div class="subtitle">${escapeHtml(jornadaInfo)}</div>
+      <table>
+        <thead><tr>
+          <th>#</th><th class="team-col">Equipo</th><th>PJ</th><th>G</th><th>E</th><th>P</th>
+          <th>GF</th><th>GC</th><th>+/-</th><th>Pts</th><th>Forma</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  } catch (e) {
+    root.innerHTML = `<div class="err">Render error: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+render();
+</script>
+</body>
+</html>
