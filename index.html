@@ -1,78 +1,242 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-<meta charset="utf-8">
-<title>Clasificación</title>
-<style>
-*, *::before, *::after { box-sizing: border-box; }
-body { margin: 0; padding: 28px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: linear-gradient(135deg, #0a3d62 0%, #006266 100%); min-height: 100vh; }
-.card { background: #fff; border-radius: 14px; box-shadow: 0 12px 36px rgba(0,0,0,0.35); padding: 24px 26px; }
-.title { margin: 0 0 4px; font-size: 21px; font-weight: 800; color: #0a3d62; letter-spacing: -0.2px; }
-.subtitle { margin: 0 0 18px; font-size: 12.5px; color: #7a7a7a; }
-table { width: 100%; border-collapse: collapse; }
-thead th { background: #0a3d62; color: #fff; padding: 11px 6px; font-size: 11.5px; font-weight: 600; text-align: center; letter-spacing: 0.3px; }
-thead th.team-col { text-align: left; padding-left: 14px; }
-thead th:first-child { border-top-left-radius: 8px; }
-thead th:last-child { border-top-right-radius: 8px; }
-tbody td { padding: 8.5px 6px; border-bottom: 1px solid #ececec; font-size: 13px; text-align: center; color: #2a2a2a; font-variant-numeric: tabular-nums; }
-tbody tr:last-child td { border-bottom: none; }
-tbody td.team { text-align: left; padding-left: 14px; font-weight: 500; }
-tbody td.pos { font-weight: 700; color: #555; }
-tbody td.pts { font-weight: 800; color: #0a3d62; font-size: 14px; }
-tbody td.diff.pos-diff { color: #2e7d32; }
-tbody td.diff.neg-diff { color: #c62828; }
-tbody tr.highlight { background: linear-gradient(90deg, rgba(255, 223, 110, 0.5) 0%, rgba(255, 223, 110, 0.18) 100%); }
-tbody tr.highlight td { font-weight: 700; color: #0a3d62; }
-.form { white-space: nowrap; min-width: 130px; }
-.form-cell { display: inline-block; width: 20px; height: 20px; line-height: 20px; border-radius: 50%; color: #fff; font-size: 10.5px; font-weight: 700; margin: 0 1px; text-align: center; }
-.fw { background: #2e7d32; }
-.fd { background: #f9a825; color: #2a2a2a; }
-.fl { background: #c62828; }
-.err { color: #fff; font-family: monospace; padding: 30px; }
-</style>
-</head>
-<body>
-<div id="root"></div>
-<script>
-function escapeHtml(s) {
-  if (s === null || s === undefined) return "";
-  return String(s)
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-}
-
-function fromBase64Url(s) {
-  let b64 = s.replace(/-/g, "+").replace(/_/g, "/");
-  while (b64.length % 4) b64 += "=";
-  return decodeURIComponent(escape(atob(b64)));
-}
-
-function render() {
-  const root = document.getElementById("root");
-  try {
-    const params = new URLSearchParams(location.search);
-    const dataB64 = params.get("d");
-    if (!dataB64) {
-      root.innerHTML = '<div class="err">Missing "d" parameter</div>';
-      return;
+  <meta charset="utf-8">
+  <title>Clasificación</title>
+  <style>
+    /* ===========================================
+   ЭТО ТВОЯ ЗОНА — СТИЛИЗУЙ КАК ХОЧЕШЬ
+   =========================================== */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
     }
-    const data = JSON.parse(fromBase64Url(dataB64));
-    const table = data.t || [];
-    const highlighted = new Set(data.h || []);
-    const groupName = data.gn || "";
-    const jornadaInfo = data.ji || "";
 
-    const rows = table.map(t => {
-      const isHi = highlighted.has(t.c);
-      const formCells = (t.r || "").split("").map(letter => {
-        const cls = letter === "G" ? "fw" : letter === "E" ? "fd" : "fl";
-        return `<span class="form-cell ${cls}">${letter}</span>`;
-      }).join("");
-      const gf = parseInt(t.gf) || 0;
-      const gc = parseInt(t.gc) || 0;
-      const diff = gf - gc;
-      const diffStr = diff > 0 ? `+${diff}` : String(diff);
-      return `<tr class="${isHi ? "highlight" : ""}">
+    body {
+      margin: 0;
+      padding: 28px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      background: #181834;
+      min-height: 100vh;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+      padding: 24px 26px;
+    }
+
+    .title {
+      margin: 0 0 4px;
+      font-size: 21px;
+      font-weight: 800;
+      color: #181834;
+      letter-spacing: -0.2px;
+    }
+
+    .subtitle {
+      margin: 0 0 18px;
+      font-size: 12.5px;
+      color: #7a7a7a;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead th {
+      background: #181834;
+      color: #fff;
+      padding: 11px 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      text-align: center;
+      letter-spacing: 0.3px;
+    }
+
+    thead th.team-col {
+      text-align: left;
+      padding-left: 14px;
+    }
+
+    thead th:first-child {
+      border-top-left-radius: 8px;
+    }
+
+    thead th:last-child {
+      border-top-right-radius: 8px;
+    }
+
+    tbody td {
+      padding: 8.5px 6px;
+      border-bottom: 1px solid #ececec;
+      font-size: 13px;
+      text-align: center;
+      color: #2a2a2a;
+      font-variant-numeric: tabular-nums;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    tbody td.team {
+      text-align: left;
+      padding-left: 14px;
+      font-weight: 500;
+    }
+
+    tbody td.pos {
+      font-weight: 700;
+      color: #555;
+    }
+
+    tbody td.pts {
+      font-weight: 800;
+      color: #181834;
+      font-size: 14px;
+    }
+
+    tbody td.diff.pos-diff {
+      color: #2e7d32;
+    }
+
+    tbody td.diff.neg-diff {
+      color: #f44019;
+    }
+
+    tbody tr.highlight {
+      background: linear-gradient(90deg, rgba(221, 242, 24, 0.5) 0%, rgba(221, 242, 24, 0.18) 100%);
+    }
+
+    tbody tr.highlight td {
+      font-weight: 700;
+      color: #181834;
+    }
+
+    .form {
+      white-space: nowrap;
+      min-width: 130px;
+    }
+
+    .form-cell {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      line-height: 20px;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 10.5px;
+      font-weight: 700;
+      margin: 0 1px;
+      text-align: center;
+    }
+
+    .fw {
+      background: #5cc30a;
+    }
+
+    .fd {
+      background: #f9a825;
+      /* color: #2a2a2a; */
+    }
+
+    .fl {
+      background: #f44019;
+    }
+
+    .err {
+      color: #fff;
+      font-family: monospace;
+      padding: 30px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="root"></div>
+
+  <!-- ===========================================
+     НИЖЕ — JS ЛОГИКА. НЕ ТРОГАЙ:
+     - имена полей (t.p, t.n, t.pj, t.g, t.e, t.pp, t.gf, t.gc, t.pt, t.r, t.c)
+     - классы .fw, .fd, .fl, .highlight, .form-cell, .card, .title, .subtitle
+     Эти имена жёстко связаны с воркфлоу в Pipedream
+     =========================================== -->
+  <script>
+    // Демо-данные. Используются только когда страница открыта без параметра ?d=...
+    // (для локальной разработки стилей)
+    const DEMO_DATA = {
+      t: [
+        { p: "1", c: "demo1", n: "U.D. Castellonense", pj: 31, g: 27, e: 1, pp: 3, gf: 215, gc: 95, pt: 82, r: "GGGGG" },
+        { p: "2", c: "demo2", n: "C.U.D. Barri del Crist 'A'", pj: 31, g: 25, e: 3, pp: 3, gf: 187, gc: 85, pt: 78, r: "GGEGG" },
+        { p: "3", c: "demo3", n: "Athletic La Vall C.F.", pj: 31, g: 20, e: 1, pp: 10, gf: 183, gc: 120, pt: 61, r: "GEGGG" },
+        { p: "4", c: "25946", n: "C.F.S. Aliança Quart de Poblet 'C'", pj: 31, g: 18, e: 7, pp: 6, gf: 167, gc: 117, pt: 60, r: "EGGGG" },
+        { p: "5", c: "demo5", n: "C.D. L'Alcúdia de Crespins", pj: 31, g: 18, e: 4, pp: 9, gf: 204, gc: 133, pt: 58, r: "GPEGG" },
+        { p: "6", c: "demo6", n: "Inter Xàtiva C.F.B.", pj: 31, g: 17, e: 5, pp: 9, gf: 169, gc: 136, pt: 56, r: "PGGEP" },
+        { p: "7", c: "demo7", n: "Favara C.F.S", pj: 31, g: 16, e: 5, pp: 10, gf: 128, gc: 113, pt: 53, r: "GGEPG" },
+        { p: "8", c: "demo8", n: "C.F. Llutxent", pj: 31, g: 17, e: 1, pp: 13, gf: 141, gc: 117, pt: 52, r: "GPGPG" },
+        { p: "9", c: "demo9", n: "C.D. Nuestra Sa del Socorro 'A'", pj: 31, g: 16, e: 3, pp: 12, gf: 108, gc: 102, pt: 51, r: "GEGPP" },
+        { p: "10", c: "demo10", n: "F.S. Sueca 'B'", pj: 31, g: 14, e: 6, pp: 11, gf: 122, gc: 133, pt: 48, r: "PGEEG" },
+        { p: "11", c: "demo11", n: "C.D. Corbera Lambert Logística y Gestión 'B'", pj: 31, g: 13, e: 3, pp: 14, gf: 114, gc: 107, pt: 45, r: "GPEGP" },
+        { p: "12", c: "demo12", n: "C.F.S. L'Olleria La Vall d'Albaida 'B'", pj: 31, g: 13, e: 4, pp: 14, gf: 142, gc: 128, pt: 43, r: "PPGPE" },
+        { p: "13", c: "demo13", n: "New Benifaió 2020 F.C. 'A'", pj: 31, g: 11, e: 5, pp: 15, gf: 129, gc: 141, pt: 38, r: "GPEPP" },
+        { p: "14", c: "demo14", n: "C.E. La Pobla del Duc 'B'", pj: 31, g: 7, e: 3, pp: 21, gf: 116, gc: 161, pt: 24, r: "PPEPG" },
+        { p: "15", c: "demo15", n: "F.S. Alberic", pj: 31, g: 5, e: 5, pp: 21, gf: 105, gc: 171, pt: 20, r: "PPGEP" },
+        { p: "16", c: "demo16", n: "C.D. Maguen Alfafar F.S. 'B'", pj: 31, g: 4, e: 1, pp: 26, gf: 54, gc: 212, pt: 13, r: "PEPPP" },
+        { p: "17", c: "demo17", n: "C.D. Inter de Chella", pj: 31, g: 3, e: 3, pp: 25, gf: 98, gc: 187, pt: 12, r: "PPEPP" },
+        { p: "18", c: "demo18", n: "JP Sport Club 'A'", pj: 31, g: 3, e: 2, pp: 26, gf: 113, gc: 237, pt: 10, r: "PPPPP" },
+      ],
+      h: ["25946"],
+      gn: "2ª Regional Futsal — Grup - 2",
+      ji: "Clasificación tras la jornada 31 (DEMO)",
+    };
+
+    function escapeHtml(s) {
+      if (s === null || s === undefined) return "";
+      return String(s)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    function fromBase64Url(s) {
+      let b64 = s.replace(/-/g, "+").replace(/_/g, "/");
+      while (b64.length % 4) b64 += "=";
+      return decodeURIComponent(escape(atob(b64)));
+    }
+
+    function render() {
+      const root = document.getElementById("root");
+      try {
+        const params = new URLSearchParams(location.search);
+        const dataB64 = params.get("d");
+
+        let data;
+        if (dataB64) {
+          data = JSON.parse(fromBase64Url(dataB64));
+        } else {
+          data = DEMO_DATA;
+        }
+
+        const table = data.t || [];
+        const highlighted = new Set(data.h || []);
+        const groupName = data.gn || "";
+        const jornadaInfo = data.ji || "";
+
+        const rows = table.map(t => {
+          const isHi = highlighted.has(t.c);
+          const formCells = (t.r || "").split("").map(letter => {
+            const cls = letter === "G" ? "fw" : letter === "E" ? "fd" : "fl";
+            return `<span class="form-cell ${cls}">${letter}</span>`;
+          }).join("");
+          const gf = parseInt(t.gf) || 0;
+          const gc = parseInt(t.gc) || 0;
+          const diff = gf - gc;
+          const diffStr = diff > 0 ? `+${diff}` : String(diff);
+          return `<tr class="${isHi ? "highlight" : ""}">
         <td class="pos">${escapeHtml(t.p)}</td>
         <td class="team">${escapeHtml(t.n)}</td>
         <td>${escapeHtml(t.pj)}</td>
@@ -85,25 +249,26 @@ function render() {
         <td class="pts">${escapeHtml(t.pt)}</td>
         <td class="form">${formCells}</td>
       </tr>`;
-    }).join("");
+        }).join("");
 
-    root.innerHTML = `<div class="card">
+        root.innerHTML = `<div class="card">
       <h1 class="title">${escapeHtml(groupName)}</h1>
       <div class="subtitle">${escapeHtml(jornadaInfo)}</div>
       <table>
         <thead><tr>
           <th>#</th><th class="team-col">Equipo</th><th>PJ</th><th>G</th><th>E</th><th>P</th>
-          <th>GF</th><th>GC</th><th>+/-</th><th>Pts</th><th>Forma</th>
+          <th>GF</th><th>GC</th><th>+/-</th><th>Pts</th><th>Racha</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>`;
-  } catch (e) {
-    root.innerHTML = `<div class="err">Render error: ${escapeHtml(e.message)}</div>`;
-  }
-}
+      } catch (e) {
+        root.innerHTML = `<div class="err">Render error: ${escapeHtml(e.message)}</div>`;
+      }
+    }
 
-render();
-</script>
+    render();
+  </script>
 </body>
+
 </html>
