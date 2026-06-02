@@ -111,12 +111,22 @@
 
     tbody td.pos {
       font-weight: 700;
+      position: relative;
+    }
+
+    tbody tr:first-child .pos span {
+      position: absolute;
+      left: 0;
+      top: 0;      
+      height: 100%;
+      width: 4px;
+      background: #5cc30a;
     }
 
     tbody td.pts {
       font-weight: 800;
       color: #181834;
-      font-size: 14px;
+      font-size: 16px;
     }
 
     tbody td.diff.pos-diff {
@@ -255,7 +265,7 @@
           const diff = gf - gc;
           const diffStr = diff > 0 ? `+${diff}` : String(diff);
           return `<tr class="${isHi ? "highlight" : ""}">
-        <td class="pos">${escapeHtml(t.p)}</td>
+        <td class="pos"><span></span>${escapeHtml(t.p)}</td>
         <td class="team">${escapeHtml(t.n)}</td>
         <td>${escapeHtml(t.pj)}</td>
         <td>${escapeHtml(t.g)}</td>
